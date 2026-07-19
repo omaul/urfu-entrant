@@ -427,7 +427,7 @@
      ============================================================ */
   const SNAPSHOT_DATE = '19 июля 2026';
   const SNAPSHOT_DATA = null;
-  const SNAPSHOT_URL  = '';
+  const SNAPSHOT_URL  = 'assets/urfu_packed.json';
 
   const $ = s => document.querySelector(s);
   let ENTRANTS = [];   // сырые items
@@ -854,6 +854,7 @@
     btn.classList.remove('hidden');
     $('#snapNote').textContent = `данные на ${SNAPSHOT_DATE}`;
     btn.onclick = loadSnapshot;
+    loadSnapshot(); // открываем срез сразу, без действий пользователя
   }
   initSnapshot();
 
