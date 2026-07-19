@@ -3,7 +3,8 @@
   --surface:#FFFFFF;
   --ink:#14161B;
   --muted:#616875;
-  --faint:#8A909B;
+  --muted-strong:#4B5160;
+  --faint:#5B6270;
   --line:#E1E4E9;
   --line-strong:#CDD2DA;
   --accent:#1F44C4;
@@ -108,9 +109,9 @@ select:focus,input:focus{outline:2px solid var(--accent-soft);border-color:var(-
 .trow .bar{position:absolute;left:0;top:0;bottom:0;background:var(--accent-bar);z-index:0}
 .trow.top .bar{background:var(--accent-bar-strong)}
 .trow .rank,.trow .name,.trow .count{position:relative;z-index:1}
-.trow .rank{font-family:var(--mono);font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.trow .rank{font-family:var(--mono);font-size:12px;color:var(--muted-strong);font-variant-numeric:tabular-nums}
 .trow .name{font-size:13.5px;padding:9px 12px 9px 0;line-height:1.35}
-.trow .name .spec{display:block;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.trow .name .spec{display:block;font-size:11.5px;color:var(--muted-strong);font-family:var(--mono)}
 .trow .count{font-family:var(--mono);font-size:15px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
 .empty{padding:34px 16px;text-align:center;color:var(--muted)}
 
@@ -167,11 +168,11 @@ select:focus,input:focus{outline:2px solid var(--accent-soft);border-color:var(-
 .trow-f .bar{position:absolute;left:0;top:0;bottom:0;background:var(--accent-bar);z-index:0}
 .trow-f .bar.p1{background:var(--accent-bar-strong)}
 .trow-f .rank,.trow-f .name,.trow-f .num{position:relative;z-index:1}
-.trow-f .rank{font-family:var(--mono);font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.trow-f .rank{font-family:var(--mono);font-size:12px;color:var(--muted-strong);font-variant-numeric:tabular-nums}
 .trow-f .name{font-size:13px;padding:8px 10px 8px 0;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trow-f .num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;font-size:13.5px}
 .trow-f .num.p1{font-weight:600}
-.trow-f .num.share{color:var(--muted);font-size:12.5px}
+.trow-f .num.share{color:var(--muted-strong);font-size:12.5px}
 
 /* me / "где я" */
 .me-controls{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;padding:16px;border-bottom:1px solid var(--line-strong)}

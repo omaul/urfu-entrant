@@ -55,6 +55,7 @@
     </div>
   </header>
 
+  <main>
   <!-- ============ LOADER (виден, пока грузится срез, и как фолбэк при ошибке) ============ -->
   <section id="loader" class="card">
     <div class="row">
@@ -98,31 +99,31 @@
         </div>
       </div>
       <div class="field" data-views="summary rating first">
-        <label>Финансирование</label>
+        <label for="fComp">Финансирование</label>
         <select id="fComp"><option value="">все</option></select>
       </div>
       <div class="field" data-views="summary rating first">
-        <label>Институт / филиал</label>
+        <label for="fInst">Институт / филиал</label>
         <select id="fInst"><option value="">все</option></select>
       </div>
       <div class="field" data-views="summary rating">
-        <label>Статус</label>
+        <label for="fStatus">Статус</label>
         <select id="fStatus"><option value="">все</option></select>
       </div>
       <div class="field" data-views="summary rating">
-        <label>Приоритет</label>
+        <label for="fPrio">Приоритет</label>
         <select id="fPrio"><option value="">любой</option></select>
       </div>
       <div class="field" data-views="summary rating">
         <label>Балл</label>
         <div style="display:flex;gap:6px;align-items:center">
-          <input type="number" id="fSmin" placeholder="от" style="min-width:66px;width:66px">
+          <input type="number" id="fSmin" aria-label="Балл от" placeholder="от" style="min-width:66px;width:66px">
           <span style="color:var(--faint)">–</span>
-          <input type="number" id="fSmax" placeholder="до" style="min-width:66px;width:66px">
+          <input type="number" id="fSmax" aria-label="Балл до" placeholder="до" style="min-width:66px;width:66px">
         </div>
       </div>
       <div class="field grow" data-views="summary rating first">
-        <label>Поиск направления</label>
+        <label for="fSearch">Поиск направления</label>
         <input type="text" id="fSearch" placeholder="напр. Технология машиностроения">
       </div>
     </div>
@@ -162,16 +163,16 @@
     <div class="tablecard hidden" id="cardMe">
       <div class="me-controls">
         <div class="field grow">
-          <label>Направление</label>
+          <label for="meDir">Направление</label>
           <input type="text" id="meDir" list="dirList" placeholder="начни вводить название…" autocomplete="off">
           <datalist id="dirList"></datalist>
         </div>
         <div class="field">
-          <label>Финансирование</label>
+          <label for="meComp">Финансирование</label>
           <select id="meComp"><option value="">любое</option></select>
         </div>
         <div class="field">
-          <label>Твой балл</label>
+          <label for="meScore">Твой балл</label>
           <input type="number" id="meScore" placeholder="напр. 260" style="width:104px">
         </div>
       </div>
@@ -186,6 +187,7 @@
       </span>
     </div>
   </section>
+  </main>
 
 </div>
 
