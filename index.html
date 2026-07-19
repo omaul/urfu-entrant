@@ -209,7 +209,7 @@
     <div>
       <div class="eyebrow">УрФУ · приёмная кампания</div>
       <h1>Абитуриенты по направлениям</h1>
-      <div class="sub">Загрузите выгрузку заявлений и считайте конкурс по любому срезу</div>
+      <div class="sub" id="dataSub">Загрузите выгрузку заявлений и считайте конкурс по любому срезу</div>
     </div>
   </header>
 
@@ -217,7 +217,7 @@
   <section id="loader" class="card">
     <div class="row">
       <button class="btn primary hidden" id="btnSnap">Открыть встроенный срез</button>
-      <button class="btn" id="btnFetch">Загрузить с сервера</button>
+      <button class="btn" id="btnFetch">Загрузить свежие с сервера</button>
       <button class="btn" id="btnFile">Загрузить файл JSON</button>
       <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
       <span class="eyebrow" id="snapNote"></span>
@@ -407,6 +407,7 @@
       <span id="ftInfo"></span>
       <span style="display:flex;gap:8px">
         <button class="btn" id="btnCsv">Скачать CSV</button>
+        <button class="btn" id="btnUpdate">Обновить с сервера</button>
         <button class="btn" id="btnReset">Загрузить другие данные</button>
       </span>
     </div>
@@ -430,12 +431,17 @@
   const SNAPSHOT_URL  = 'assets/urfu_packed.json';
 
   const $ = s => document.querySelector(s);
+  const DEFAULT_SUB = $('#dataSub').textContent;
   let ENTRANTS = [];   // сырые items
   let APPS = [];       // плоский список заявлений
   let state = { view:'summary', group:'program', mode:'apps', comp:'', inst:'', status:'', prio:'', smin:'', smax:'', search:'', sortDesc:true, rSort:'total', meDir:'', meComp:'', meScore:'' };
 
   /* ---------- загрузка ---------- */
-  function setStatus(msg, cls){ const s=$('#status'); s.textContent=msg; s.className='status'+(cls?' '+cls:''); }
+  function setStatus(msg, cls){
+    const s=$('#status'); s.textContent=msg; s.className='status'+(cls?' '+cls:'');
+    // если приложение уже открыто (обновление данных на лету) — дублируем статус в шапку
+    if(!$('#app').classList.contains('hidden')) $('#dataSub').textContent = msg || DEFAULT_SUB;
+  }
 
   async function fetchFromServer(){
     setStatus('Тянем данные с urfu.ru…');
@@ -464,7 +470,7 @@
         buckets[p-1]=await getPage(p); got+=buckets[p-1].length; done++;
         setStatus(`Загружено ${got} из ${total} · ${done}/${pages} стр.…`); } };
       await Promise.all(Array.from({length:CONC},worker));
-      ingest(buckets.flat());
+      ingest(buckets.flat(), 'свежие с urfu.ru, '+new Date().toLocaleString('ru',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}));
     }catch(e){
       setStatus('Прямая загрузка не удалась ('+e.message+'). Обычно это CORS — используйте снипет из консоли и загрузите файл.', 'err');
     }finally{
@@ -498,18 +504,18 @@
     }));
   }
 
-  function loadObject(obj){
+  function loadObject(obj, label){
     const items = (obj && obj.v===2 && obj.dict) ? unpack(obj) : parseLoaded(obj);
-    ingest(items);
+    ingest(items, label);
   }
 
-  function loadText(text){
-    try{ loadObject(JSON.parse(text)); }
+  function loadText(text, label){
+    try{ loadObject(JSON.parse(text), label); }
     catch(e){ setStatus('Не разобрал JSON: '+e.message, 'err'); }
   }
 
   /* ---------- подготовка данных ---------- */
-  function ingest(items){
+  function ingest(items, sourceLabel){
     ENTRANTS = items;
     APPS = [];
     for(const ent of items){
@@ -531,6 +537,7 @@
       }
     }
     buildFilters();
+    $('#dataSub').textContent = sourceLabel ? 'Данные: '+sourceLabel : DEFAULT_SUB;
     $('#loader').classList.add('hidden');
     $('#app').classList.remove('hidden');
     $('#sEntrants').textContent = ENTRANTS.length.toLocaleString('ru');
@@ -836,12 +843,12 @@
   /* ---------- встроенный срез ---------- */
   async function loadSnapshot(){
     try{
-      if(SNAPSHOT_DATA){ loadObject(SNAPSHOT_DATA); return; }
+      if(SNAPSHOT_DATA){ loadObject(SNAPSHOT_DATA, 'встроенный срез от '+SNAPSHOT_DATE); return; }
       if(SNAPSHOT_URL){
         setStatus('Гружу встроенный срез…');
         const r = await fetch(SNAPSHOT_URL);
         if(!r.ok) throw new Error('HTTP '+r.status);
-        loadObject(await r.json());
+        loadObject(await r.json(), 'встроенный срез от '+SNAPSHOT_DATE);
         return;
       }
     }catch(e){ setStatus('Не удалось открыть срез: '+e.message, 'err'); }
@@ -854,28 +861,27 @@
     btn.classList.remove('hidden');
     $('#snapNote').textContent = `данные на ${SNAPSHOT_DATE}`;
     btn.onclick = loadSnapshot;
-    loadSnapshot(); // открываем срез сразу, без действий пользователя
   }
   initSnapshot();
 
   /* ---------- события ---------- */
   $('#btnFetch').onclick = fetchFromServer;
   $('#btnFile').onclick = ()=>$('#fileInput').click();
-  $('#fileInput').onchange = e=>{ const f=e.target.files[0]; if(f) f.text().then(loadText); };
+  $('#fileInput').onchange = e=>{ const f=e.target.files[0]; if(f) f.text().then(t=>loadText(t, 'файл '+f.name)); };
 
   const drop = $('#drop');
   drop.addEventListener('dragover', e=>{e.preventDefault();drop.classList.add('over');});
   drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
   drop.addEventListener('drop', e=>{
     e.preventDefault(); drop.classList.remove('over');
-    const f=e.dataTransfer.files[0]; if(f) f.text().then(loadText);
+    const f=e.dataTransfer.files[0]; if(f) f.text().then(t=>loadText(t, 'файл '+f.name));
   });
   // вставка JSON текстом
   drop.setAttribute('contenteditable','false');
   document.addEventListener('paste', e=>{
     if($('#app').classList.contains('hidden')){
       const t=(e.clipboardData||window.clipboardData).getData('text');
-      if(t && t.length>40) loadText(t);
+      if(t && t.length>40) loadText(t, 'вставленный JSON');
     }
   });
 
@@ -903,7 +909,12 @@
   $('#meComp').onchange = e=>{ state.meComp=e.target.value; renderMe(); };
   $('#meScore').oninput = e=>{ state.meScore=e.target.value; renderMe(); };
   $('#btnCsv').onclick = exportCsv;
-  $('#btnReset').onclick = ()=>{ $('#app').classList.add('hidden'); $('#loader').classList.remove('hidden'); setStatus(''); };
+  $('#btnUpdate').onclick = async ()=>{
+    const b=$('#btnUpdate'); b.disabled=true;
+    try{ await fetchFromServer(); }
+    finally{ b.disabled=false; }
+  };
+  $('#btnReset').onclick = ()=>{ $('#app').classList.add('hidden'); $('#loader').classList.remove('hidden'); $('#dataSub').textContent=DEFAULT_SUB; setStatus(''); };
 </script>
 </body>
 </html>
