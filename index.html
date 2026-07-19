@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>УрФУ — абитуриенты по направлениям</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#EEF0F3;
+      --surface:#FFFFFF;
+      --ink:#14161B;
+      --muted:#616875;
+      --faint:#8A909B;
+      --line:#E1E4E9;
+      --line-strong:#CDD2DA;
+      --accent:#1F44C4;
+      --accent-soft:#E6EAFA;
+      --accent-bar:rgba(31,68,196,.14);
+      --accent-bar-strong:rgba(31,68,196,.28);
+      --danger:#B23A2E;
+      --ok:#1E7A52;
+      --sans:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0}
+    body{
+      background:var(--bg);
+      color:var(--ink);
+      font-family:var(--sans);
+      font-size:14px;
+      line-height:1.45;
+      -webkit-font-smoothing:antialiased;
+      padding:22px;
+    }
+    .wrap{max-width:1080px;margin:0 auto}
+
+    .eyebrow{
+      font-family:var(--mono);
+      font-size:11px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:var(--faint);
+    }
+    header.top{
+      display:flex;align-items:flex-end;justify-content:space-between;
+      gap:16px;flex-wrap:wrap;
+      padding-bottom:16px;border-bottom:1px solid var(--line-strong);margin-bottom:18px;
+    }
+    header.top h1{
+      font-size:23px;font-weight:700;letter-spacing:-.01em;margin:4px 0 0;
+    }
+    header.top .sub{color:var(--muted);font-size:13px;margin-top:2px}
+
+    .card{
+      background:var(--surface);
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:16px 18px;
+    }
+
+    /* --- loader panel --- */
+    #loader .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn{
+      font-family:var(--sans);font-size:13px;font-weight:600;
+      border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);
+      padding:9px 15px;border-radius:8px;cursor:pointer;transition:.12s;
+    }
+    .btn:hover{border-color:var(--accent);color:var(--accent)}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.primary:hover{background:#173aa8;color:#fff}
+    .btn:disabled{opacity:.5;cursor:default}
+    .drop{
+      margin-top:12px;border:1.5px dashed var(--line-strong);border-radius:8px;
+      padding:20px;text-align:center;color:var(--muted);transition:.12s;cursor:pointer;
+    }
+    .drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+    details.snippet{margin-top:12px}
+    details.snippet summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:13px}
+    pre{
+      font-family:var(--mono);font-size:12px;line-height:1.5;
+      background:#12141A;color:#E7E9EE;border-radius:8px;padding:14px;overflow:auto;margin:10px 0 0;
+      white-space:pre;
+    }
+    .copy{float:right;margin:-4px 0 0}
+    .status{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px}
+    .status.err{color:var(--danger)}
+    .status.ok{color:var(--ok)}
+
+    /* --- stats --- */
+    .stats{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+    .stat{flex:1;min-width:150px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+    .stat .n{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+    .stat .l{font-size:12px;color:var(--muted);margin-top:1px}
+
+    /* --- controls --- */
+    .controls{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field label{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+    select,input[type=text]{
+      font-family:var(--sans);font-size:13px;color:var(--ink);background:var(--surface);
+      border:1px solid var(--line-strong);border-radius:7px;padding:8px 10px;min-width:150px;
+    }
+    select:focus,input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+    .seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:7px;overflow:hidden}
+    .seg button{
+      font-family:var(--sans);font-size:12.5px;font-weight:600;border:0;background:var(--surface);
+      color:var(--muted);padding:8px 13px;cursor:pointer;transition:.1s;
+    }
+    .seg button.on{background:var(--accent);color:#fff}
+    .grow{flex:1;min-width:200px}
+    .field.grow input{width:100%}
+
+    /* --- table --- */
+    .tablecard{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+    .thead,.trow{display:grid;grid-template-columns:34px 1fr 96px;align-items:center}
+    .thead{
+      padding:11px 16px;border-bottom:1px solid var(--line-strong);
+      font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+    }
+    .thead .c-count{text-align:right;cursor:pointer;user-select:none}
+    .thead .c-count:hover{color:var(--accent)}
+    .rows{max-height:60vh;overflow:auto}
+    .trow{
+      padding:0 16px;border-bottom:1px solid var(--line);position:relative;min-height:46px;
+    }
+    .trow:last-child{border-bottom:0}
+    .trow .bar{position:absolute;left:0;top:0;bottom:0;background:var(--accent-bar);z-index:0}
+    .trow.top .bar{background:var(--accent-bar-strong)}
+    .trow .rank,.trow .name,.trow .count{position:relative;z-index:1}
+    .trow .rank{font-family:var(--mono);font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+    .trow .name{font-size:13.5px;padding:9px 12px 9px 0;line-height:1.35}
+    .trow .name .spec{display:block;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+    .trow .count{font-family:var(--mono);font-size:15px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+    .empty{padding:34px 16px;text-align:center;color:var(--muted)}
+
+    .footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:12.5px}
+    .hidden{display:none}
+
+    /* rating table */
+    .thead-r,.trow-r{display:grid;grid-template-columns:40px 82px 1fr 60px 74px 74px;align-items:center;gap:10px}
+    .thead-r .sortable{text-align:right;cursor:pointer;user-select:none}
+    .thead-r .sortable:hover,.thead-r .sortable.on{color:var(--accent)}
+    .trow-r{padding:9px 16px;border-bottom:1px solid var(--line);min-height:42px}
+    .trow-r:last-child{border-bottom:0}
+    .trow-r .rank{font-family:var(--mono);font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+    .trow-r .reg{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+    .trow-r .dir{font-size:12.5px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .trow-r .num{font-family:var(--mono);font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums}
+    .trow-r .num.big{font-weight:600;font-size:14.5px}
+    .trow-r .num.zero{color:var(--faint)}
+    @media(max-width:560px){
+      .thead-r,.trow-r{grid-template-columns:26px 64px 1fr 60px;gap:6px}
+      .thead-r .sortable[data-k="priority"],.trow-r .pr,
+      .thead-r .sortable[data-k="achievs"],.trow-r .av{display:none}
+    }
+
+    /* first-choice table */
+    .thead-f,.trow-f{display:grid;grid-template-columns:40px 1fr 120px 84px 78px;align-items:center;gap:10px}
+    .thead-f div:nth-child(n+3){text-align:right}
+    .trow-f{padding:0 16px;border-bottom:1px solid var(--line);position:relative;min-height:46px}
+    .trow-f:last-child{border-bottom:0}
+    .trow-f .bar{position:absolute;left:0;top:0;bottom:0;background:var(--accent-bar);z-index:0}
+    .trow-f .bar.p1{background:var(--accent-bar-strong)}
+    .trow-f .rank,.trow-f .name,.trow-f .num{position:relative;z-index:1}
+    .trow-f .rank{font-family:var(--mono);font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+    .trow-f .name{font-size:13px;padding:8px 10px 8px 0;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .trow-f .num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;font-size:13.5px}
+    .trow-f .num.p1{font-weight:600}
+    .trow-f .num.share{color:var(--muted);font-size:12.5px}
+
+    /* me / "где я" */
+    .me-controls{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;padding:16px;border-bottom:1px solid var(--line-strong)}
+    .me-result{padding:18px}
+    .me-empty{color:var(--muted);text-align:center;padding:20px}
+    .me-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+    .me-pos-n{font-family:var(--mono);font-size:34px;font-weight:600;letter-spacing:-.02em;color:var(--accent)}
+    .me-pos-of{color:var(--muted);font-size:14px}
+    .me-pct{margin-left:auto;font-size:13px;color:var(--muted)}
+    .me-pct b{color:var(--ink);font-family:var(--mono);font-size:16px}
+    .me-sub{margin-top:8px;font-size:13px;color:var(--muted);line-height:1.5}
+    .me-sub b{color:var(--ink)}
+    .me-list{margin-top:16px;border-top:1px solid var(--line)}
+    .me-row{display:grid;grid-template-columns:44px 1fr 78px;gap:10px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);font-size:12.5px}
+    .me-row:last-child{border-bottom:0}
+    .me-row .r{font-family:var(--mono);color:var(--faint);font-variant-numeric:tabular-nums}
+    .me-row .reg{font-family:var(--mono);color:var(--muted)}
+    .me-row .sc{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+    .me-row.you{background:var(--accent-soft);border-radius:6px;font-weight:600}
+    .me-row.you .r,.me-row.you .reg{color:var(--accent)}
+    .me-row.you .reg::after{content:' ← ты'}
+
+    @media(max-width:560px){
+      body{padding:14px}
+      .thead,.trow{grid-template-columns:26px 1fr 74px}
+      .trow .count{font-size:14px}
+      .thead-f,.trow-f{grid-template-columns:26px 1fr 70px 70px}
+      .thead-f div:nth-child(5),.trow-f .share{display:none}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow">УрФУ · приёмная кампания</div>
+      <h1>Абитуриенты по направлениям</h1>
+      <div class="sub">Загрузите выгрузку заявлений и считайте конкурс по любому срезу</div>
+    </div>
+  </header>
+
+  <!-- ============ LOADER ============ -->
+  <section id="loader" class="card">
+    <div class="row">
+      <button class="btn primary hidden" id="btnSnap">Открыть встроенный срез</button>
+      <button class="btn" id="btnFetch">Загрузить с сервера</button>
+      <button class="btn" id="btnFile">Загрузить файл JSON</button>
+      <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+      <span class="eyebrow" id="snapNote"></span>
+    </div>
+
+    <div class="drop" id="drop">
+      Перетащите сюда <b>urfu_packed.json</b> — либо вставьте JSON и нажмите Enter
+      <br><small>(файл получается снипетом из консоли, см. ниже)</small>
+    </div>
+
+    <details class="snippet">
+      <summary>Снипет для консоли (если «Загрузить с сервера» упрётся в CORS)</summary>
+      <button class="btn copy" id="btnCopy">Копировать</button>
+      <pre id="snip">(async () =&gt; {
+  const base = '/api/entrant/';
+  const CONC = 6, RETRIES = 3;
+  const t0 = performance.now(), secs = () =&gt; ((performance.now()-t0)/1000).toFixed(1);
+
+  console.log('[1/5] Подбираю размер страницы…');
+  let size = null, first = null;
+  for (const s of [1000,500,200,100,50,25,20,10]) {
+    try { const r = await fetch(`${base}?page=1&amp;size=${s}`);
+      if (r.ok) { const j = await r.json(); if (j.items) { size=s; first=j; break; } } } catch(e){}
+  }
+  if (!size) return console.error('Не нашёл рабочий size');
+  const total = first.count, pages = Math.ceil(total/size);
+  console.log(`[2/5] size=${size}, записей=${total}, страниц=${pages}. Качаю (потоков ${CONC})…`);
+
+  const getPage = async (p) =&gt; {
+    for (let t=1;t&lt;=RETRIES;t++){
+      try { const r = await fetch(`${base}?page=${p}&amp;size=${size}`);
+        if (r.ok) { const j = await r.json(); if (j.items) return j.items; } } catch(e){}
+      await new Promise(res =&gt; setTimeout(res, 400*t));
+    }
+    console.warn(`страница ${p} пропущена`); return [];
+  };
+  const buckets = new Array(pages); buckets[0] = first.items;
+  let nextPage = 2, done = 1, got = first.items.length;
+  const worker = async () =&gt; { while (nextPage &lt;= pages) {
+    const p = nextPage++; buckets[p-1] = await getPage(p);
+    got += buckets[p-1].length; done++;
+    if (done%10===0 || done===pages) {
+      const rate = done/(performance.now()-t0)*1000;
+      console.log(`  ${done}/${pages} стр. · ${got}/${total} · ~${Math.max(0,(pages-done)/rate).toFixed(0)}s`);
+    }
+  }};
+  await Promise.all(Array.from({length:CONC}, worker));
+  const raw = buckets.flat();
+  console.log(`[4/5] Скачано ${raw.length} за ${secs()}s. Пакую…`);
+
+  const dict = {program:[],speciality:[],institute:[],compensation:[],status:[]};
+  const idx  = {program:new Map(),speciality:new Map(),institute:new Map(),compensation:new Map(),status:new Map()};
+  const id = (f,v) =&gt; { v=v||''; const m=idx[f]; if(m.has(v))return m.get(v); const i=dict[f].length; dict[f].push(v); m.set(v,i); return i; };
+  const items = raw.map(e =&gt; ({ r:e.regnum, a:(e.applications||[]).map(a =&gt; [
+    id('program',a.program), id('speciality',a.speciality), id('institute',a.institute),
+    id('compensation',a.compensation), id('status',a.status),
+    a.total_mark||0, a.avgm||0, a.achievs||0, (a.priority==null?null:a.priority)
+  ])}));
+  const blob = new Blob([JSON.stringify({v:2, dict, items})], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'urfu_packed.json'; a.click();
+  console.log(`[5/5] Готово за ${secs()}s. Записей: ${items.length}.`);
+})();</pre>
+      <div style="color:var(--muted);font-size:12.5px;margin-top:8px">
+        Открой <b>urfu.ru/ru/alpha/full</b> → F12 → вкладка Console → вставь код → Enter. Скачается файл, его и закинь сюда.
+      </div>
+    </details>
+
+    <div class="status" id="status"></div>
+  </section>
+
+  <!-- ============ APP ============ -->
+  <section id="app" class="hidden">
+    <div class="stats">
+      <div class="stat"><div class="n" id="sEntrants">0</div><div class="l">абитуриентов</div></div>
+      <div class="stat"><div class="n" id="sApps">0</div><div class="l">заявлений всего</div></div>
+      <div class="stat"><div class="n" id="sShownCount">0</div><div class="l" id="sShownLbl">в текущем срезе</div></div>
+      <div class="stat"><div class="n" id="sDirs">0</div><div class="l">направлений в списке</div></div>
+    </div>
+
+    <div class="controls">
+      <div class="field">
+        <label>Режим</label>
+        <div class="seg" id="segView">
+          <button data-v="summary" class="on">Сводка</button>
+          <button data-v="first">1-й выбор</button>
+          <button data-v="rating">Рейтинг</button>
+          <button data-v="me">Где я</button>
+        </div>
+      </div>
+      <div class="field" data-views="summary first">
+        <label>Группировать</label>
+        <div class="seg" id="segGroup">
+          <button data-v="program" class="on">Программа</button>
+          <button data-v="speciality">Специальность</button>
+        </div>
+      </div>
+      <div class="field" data-views="summary">
+        <label>Считать</label>
+        <div class="seg" id="segMode">
+          <button data-v="apps" class="on">Заявления</button>
+          <button data-v="people">Людей</button>
+        </div>
+      </div>
+      <div class="field" data-views="summary rating first">
+        <label>Финансирование</label>
+        <select id="fComp"><option value="">все</option></select>
+      </div>
+      <div class="field" data-views="summary rating first">
+        <label>Институт / филиал</label>
+        <select id="fInst"><option value="">все</option></select>
+      </div>
+      <div class="field" data-views="summary rating">
+        <label>Статус</label>
+        <select id="fStatus"><option value="">все</option></select>
+      </div>
+      <div class="field" data-views="summary rating">
+        <label>Приоритет</label>
+        <select id="fPrio"><option value="">любой</option></select>
+      </div>
+      <div class="field" data-views="summary rating">
+        <label>Балл</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="fSmin" placeholder="от" style="min-width:66px;width:66px">
+          <span style="color:var(--faint)">–</span>
+          <input type="number" id="fSmax" placeholder="до" style="min-width:66px;width:66px">
+        </div>
+      </div>
+      <div class="field grow" data-views="summary rating first">
+        <label>Поиск направления</label>
+        <input type="text" id="fSearch" placeholder="напр. Технология машиностроения">
+      </div>
+    </div>
+
+    <div class="tablecard" id="cardSummary">
+      <div class="thead">
+        <div class="c-rank">#</div>
+        <div class="c-name">Направление</div>
+        <div class="c-count" id="thCount">Кол-во ↓</div>
+      </div>
+      <div class="rows" id="rows"></div>
+    </div>
+
+    <div class="tablecard hidden" id="cardRating">
+      <div class="thead thead-r">
+        <div>#</div>
+        <div>Рег. номер</div>
+        <div>Направление</div>
+        <div class="sortable" data-k="priority">Приор.</div>
+        <div class="sortable" data-k="achievs">ИД</div>
+        <div class="sortable on" data-k="total">Балл ↓</div>
+      </div>
+      <div class="rows" id="rowsR"></div>
+    </div>
+
+    <div class="tablecard hidden" id="cardFirst">
+      <div class="thead thead-f">
+        <div>#</div>
+        <div>Направление</div>
+        <div>1-м приоритетом</div>
+        <div>Всего</div>
+        <div>Доля 1-х</div>
+      </div>
+      <div class="rows" id="rowsF"></div>
+    </div>
+
+    <div class="tablecard hidden" id="cardMe">
+      <div class="me-controls">
+        <div class="field grow">
+          <label>Направление</label>
+          <input type="text" id="meDir" list="dirList" placeholder="начни вводить название…" autocomplete="off">
+          <datalist id="dirList"></datalist>
+        </div>
+        <div class="field">
+          <label>Финансирование</label>
+          <select id="meComp"><option value="">любое</option></select>
+        </div>
+        <div class="field">
+          <label>Твой балл</label>
+          <input type="number" id="meScore" placeholder="напр. 260" style="width:104px">
+        </div>
+      </div>
+      <div id="meResult" class="me-result"></div>
+    </div>
+
+    <div class="footer">
+      <span id="ftInfo"></span>
+      <span style="display:flex;gap:8px">
+        <button class="btn" id="btnCsv">Скачать CSV</button>
+        <button class="btn" id="btnReset">Загрузить другие данные</button>
+      </span>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  /* ============================================================
+     ВСТРОЕННЫЙ СРЕЗ (необязательно)
+     1) Дата среза — показывается на кнопке и подписи:
+     2) Данные — ОДИН из двух вариантов:
+        • SNAPSHOT_DATA — вставь СЮДА содержимое urfu_packed.json целиком,
+          заменив null, напр.:  const SNAPSHOT_DATA = {"v":2,"dict":{...},"items":[...]};
+        • SNAPSHOT_URL  — если файл большой, залей его (GitHub Gist / raw)
+          и укажи прямую ссылку; кнопка подгрузит по ней.
+     Если оба пустые — кнопка «Открыть встроенный срез» просто не появится.
+     ============================================================ */
+  const SNAPSHOT_DATE = '19 июля 2026';
+  const SNAPSHOT_DATA = null;
+  const SNAPSHOT_URL  = '';
+
+  const $ = s => document.querySelector(s);
+  let ENTRANTS = [];   // сырые items
+  let APPS = [];       // плоский список заявлений
+  let state = { view:'summary', group:'program', mode:'apps', comp:'', inst:'', status:'', prio:'', smin:'', smax:'', search:'', sortDesc:true, rSort:'total', meDir:'', meComp:'', meScore:'' };
+
+  /* ---------- загрузка ---------- */
+  function setStatus(msg, cls){ const s=$('#status'); s.textContent=msg; s.className='status'+(cls?' '+cls:''); }
+
+  async function fetchFromServer(){
+    setStatus('Тянем данные с urfu.ru…');
+    $('#btnFetch').disabled = true;
+    try{
+      const base = 'https://urfu.ru/api/entrant/';
+      let size=null, first=null;
+      for(const s of [1000,500,200,100,50,25,20,10]){
+        const r = await fetch(`${base}?page=1&size=${s}`);
+        if(r.ok){ const j=await r.json(); if(j.items){ size=s; first=j; break; } }
+      }
+      if(!size) throw new Error('не нашёл рабочий size');
+      const total=first.count, pages=Math.ceil(total/size);
+      const CONC=6, RETRIES=3;
+      const buckets=new Array(pages); buckets[0]=first.items;
+      let nextPage=2, done=1, got=first.items.length;
+      const getPage=async(p)=>{
+        for(let t=1;t<=RETRIES;t++){
+          try{ const r=await fetch(`${base}?page=${p}&size=${size}`);
+            if(r.ok){ const j=await r.json(); if(j.items) return j.items; } }catch(e){}
+          await new Promise(res=>setTimeout(res,400*t));
+        }
+        return [];
+      };
+      const worker=async()=>{ while(nextPage<=pages){ const p=nextPage++;
+        buckets[p-1]=await getPage(p); got+=buckets[p-1].length; done++;
+        setStatus(`Загружено ${got} из ${total} · ${done}/${pages} стр.…`); } };
+      await Promise.all(Array.from({length:CONC},worker));
+      ingest(buckets.flat());
+    }catch(e){
+      setStatus('Прямая загрузка не удалась ('+e.message+'). Обычно это CORS — используйте снипет из консоли и загрузите файл.', 'err');
+    }finally{
+      $('#btnFetch').disabled = false;
+    }
+  }
+
+  function parseLoaded(obj){
+    // принимаем и {items:[...]}, и голый массив
+    const items = Array.isArray(obj) ? obj : (obj && obj.items);
+    if(!Array.isArray(items)) throw new Error('не вижу массив items');
+    return items;
+  }
+
+  // сжатый формат со словарём (v:2) -> обычные items
+  function unpack(obj){
+    const D = obj.dict;
+    return obj.items.map(e=>({
+      regnum: e.r,
+      applications: (e.a||[]).map(x=>({
+        program: D.program[x[0]],
+        speciality: D.speciality[x[1]],
+        institute: D.institute[x[2]],
+        compensation: D.compensation[x[3]],
+        status: D.status[x[4]],
+        total_mark: x[5],
+        avgm: x[6],
+        achievs: x[7],
+        priority: x[8]
+      }))
+    }));
+  }
+
+  function loadObject(obj){
+    const items = (obj && obj.v===2 && obj.dict) ? unpack(obj) : parseLoaded(obj);
+    ingest(items);
+  }
+
+  function loadText(text){
+    try{ loadObject(JSON.parse(text)); }
+    catch(e){ setStatus('Не разобрал JSON: '+e.message, 'err'); }
+  }
+
+  /* ---------- подготовка данных ---------- */
+  function ingest(items){
+    ENTRANTS = items;
+    APPS = [];
+    for(const ent of items){
+      const reg = ent.regnum;
+      for(const a of (ent.applications||[])){
+        APPS.push({
+          regnum: reg,
+          program: a.program || '—',
+          speciality: a.speciality || '—',
+          institute: a.institute || '—',
+          compensation: a.compensation || '—',
+          status: a.status || '—',
+          total: Number(a.total_mark)||0,
+          avgm: Number(a.avgm)||0,
+          achievs: Number(a.achievs)||0,
+          priority: (a.priority==null?'':a.priority),
+          marks: a.marks||{}
+        });
+      }
+    }
+    buildFilters();
+    $('#loader').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    $('#sEntrants').textContent = ENTRANTS.length.toLocaleString('ru');
+    $('#sApps').textContent = APPS.length.toLocaleString('ru');
+    render();
+  }
+
+  function uniqueSorted(field){
+    return [...new Set(APPS.map(a=>a[field]))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'ru'));
+  }
+  function fillSelect(sel, values){
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">все</option>' + values.map(v=>`<option>${esc(v)}</option>`).join('');
+    sel.value = cur;
+  }
+  function buildFilters(){
+    fillSelect($('#fComp'), uniqueSorted('compensation'));
+    fillSelect($('#fInst'), uniqueSorted('institute'));
+    fillSelect($('#fStatus'), uniqueSorted('status'));
+    // приоритеты: числовые по возрастанию + «без приоритета»
+    const prios = [...new Set(APPS.map(a=>a.priority).filter(p=>p!==''))].sort((a,b)=>a-b);
+    const sel = $('#fPrio'), cur = sel.value;
+    sel.innerHTML = '<option value="">любой</option>'
+            + prios.map(p=>`<option value="${p}">${p}</option>`).join('')
+            + '<option value="none">без приоритета</option>';
+    sel.value = cur;
+    // «Где я»: список направлений (программ) для автодополнения + финансирование
+    const dirs = uniqueSorted('program');
+    $('#dirList').innerHTML = dirs.map(d=>`<option value="${esc(d)}">`).join('');
+    fillSelect($('#meComp'), uniqueSorted('compensation'));
+    $('#meComp').querySelector('option[value=""]').textContent = 'любое';
+  }
+
+  /* ---------- агрегация ---------- */
+  function aggregate(){
+    const key = state.group;         // program | speciality
+    const map = new Map();           // name -> count | Set
+    let shownTotal = 0;
+    const seenPeopleAll = new Set();
+
+    for(const a of APPS){
+      if(!passFilters(a)) continue;
+
+      const name = a[key];
+      if(state.mode === 'people'){
+        if(!map.has(name)) map.set(name, new Set());
+        map.get(name).add(a.regnum);
+        seenPeopleAll.add(a.regnum);
+      }else{
+        map.set(name, (map.get(name)||0)+1);
+        shownTotal++;
+      }
+    }
+    if(state.mode==='people') shownTotal = seenPeopleAll.size;
+
+    let rows = [...map.entries()].map(([name,v])=>({
+      name,
+      spec: key==='program' ? specForProgram(name) : null,
+      count: state.mode==='people' ? v.size : v
+    }));
+    rows.sort((a,b)=> state.sortDesc ? b.count-a.count : a.count-b.count);
+    return { rows, shownTotal };
+  }
+  // подтягиваем код специальности к программе для подписи
+  const _progSpec = {};
+  function specForProgram(prog){
+    if(prog in _progSpec) return _progSpec[prog];
+    const hit = APPS.find(a=>a.program===prog);
+    return _progSpec[prog] = hit ? hit.speciality : '';
+  }
+
+  /* ---------- единый предикат фильтрации ---------- */
+  function passFilters(a){
+    if(state.comp && a.compensation !== state.comp) return false;
+    if(state.inst && a.institute !== state.inst) return false;
+    if(state.status && a.status !== state.status) return false;
+    if(state.prio!==''){
+      if(state.prio==='none'){ if(a.priority!=='') return false; }
+      else if(String(a.priority)!==state.prio) return false;
+    }
+    if(state.smin!=='' && a.total < +state.smin) return false;
+    if(state.smax!=='' && a.total > +state.smax) return false;
+    const q = state.search.trim().toLowerCase();
+    if(q && !(a.program.toLowerCase().includes(q) || a.speciality.toLowerCase().includes(q) || String(a.regnum).includes(q))) return false;
+    return true;
+  }
+
+  /* ---------- общий фильтр заявлений ---------- */
+  function filterApps(){ return APPS.filter(passFilters); }
+
+  /* ---------- отрисовка ---------- */
+  function render(){
+    const v = state.view;
+    $('#cardSummary').classList.toggle('hidden', v!=='summary');
+    $('#cardRating').classList.toggle('hidden', v!=='rating');
+    $('#cardFirst').classList.toggle('hidden', v!=='first');
+    $('#cardMe').classList.toggle('hidden', v!=='me');
+    // видимость фильтров по атрибуту data-views
+    document.querySelectorAll('#app .controls .field[data-views]').forEach(f=>{
+      f.classList.toggle('hidden', !f.dataset.views.split(' ').includes(v));
+    });
+    // CSV только для сводки и рейтинга; статистика-плашки прячем в «Где я»
+    $('#btnCsv').classList.toggle('hidden', !(v==='summary'||v==='rating'));
+    $('.stats') && document.querySelector('.stats').classList.toggle('hidden', v==='me');
+    ({summary:renderSummary, rating:renderRating, first:renderFirst, me:renderMe})[v]();
+  }
+
+  function renderSummary(){
+    const {rows, shownTotal} = aggregate();
+    const maxByVal = Math.max(1, ...rows.map(r=>r.count));
+
+    $('#sShownCount').textContent = shownTotal.toLocaleString('ru');
+    $('#sShownLbl').textContent = state.mode==='people' ? 'людей в срезе' : 'заявлений в срезе';
+    $('#sDirs').textContent = rows.length.toLocaleString('ru');
+    $('#thCount').textContent = 'Кол-во ' + (state.sortDesc?'↓':'↑');
+
+    const box = $('#rows');
+    if(!rows.length){ box.innerHTML = '<div class="empty">Ничего не найдено под эти фильтры.</div>'; $('#ftInfo').textContent=''; return; }
+
+    box.innerHTML = rows.map((r,i)=>{
+      const w = (r.count/maxByVal*100).toFixed(1);
+      const top = i<3 ? ' top' : '';
+      const spec = r.spec ? `<span class="spec">${esc(r.spec)}</span>` : '';
+      return `<div class="trow${top}">
+      <div class="bar" style="width:${w}%"></div>
+      <div class="rank">${i+1}</div>
+      <div class="name">${esc(r.name)}${spec}</div>
+      <div class="count">${r.count.toLocaleString('ru')}</div>
+    </div>`;
+    }).join('');
+
+    $('#ftInfo').textContent = `${rows.length} направлений · сумма по срезу: ${rows.reduce((s,r)=>s+r.count,0).toLocaleString('ru')} ${state.mode==='people'?'(с учётом пересечений между направлениями)':'заявлений'}`;
+  }
+
+  function renderRating(){
+    const k = state.rSort;
+    let apps = filterApps().slice();
+    apps.sort((a,b)=>{
+      if(k==='priority'){ // пустой приоритет — в конец, иначе по возрастанию
+        const pa=a.priority===''?1e9:a.priority, pb=b.priority===''?1e9:b.priority;
+        return pa-pb;
+      }
+      return b[k]-a[k]; // total / avgm — по убыванию
+    });
+
+    $('#sShownCount').textContent = apps.length.toLocaleString('ru');
+    $('#sShownLbl').textContent = 'заявлений в срезе';
+    $('#sDirs').textContent = new Set(apps.map(a=>a.regnum)).size.toLocaleString('ru');
+    document.querySelectorAll('.thead-r .sortable').forEach(el=>{
+      const on = el.dataset.k===k;
+      el.classList.toggle('on', on);
+      const base = el.dataset.k==='priority' ? 'Приор.' : (el.dataset.k==='achievs'?'ИД':'Балл');
+      el.textContent = base + (on && el.dataset.k!=='priority' ? ' ↓' : '');
+    });
+
+    const box = $('#rowsR');
+    if(!apps.length){ box.innerHTML='<div class="empty">Ничего не найдено под эти фильтры.</div>'; $('#ftInfo').textContent=''; return; }
+
+    const LIMIT = 3000;
+    const shown = apps.slice(0, LIMIT);
+    box.innerHTML = shown.map((a,i)=>`<div class="trow-r">
+    <div class="rank">${i+1}</div>
+    <div class="reg">${a.regnum}</div>
+    <div class="dir" title="${esc(a.program)}">${esc(a.program)}</div>
+    <div class="num pr">${a.priority===''?'<span class="zero">—</span>':a.priority}</div>
+    <div class="num av${a.achievs?'':' zero'}">${a.achievs||0}</div>
+    <div class="num big${a.total?'':' zero'}">${a.total||0}</div>
+  </div>`).join('');
+
+    $('#ftInfo').textContent = apps.length>LIMIT
+            ? `Показаны первые ${LIMIT.toLocaleString('ru')} из ${apps.length.toLocaleString('ru')} — сузьте фильтром или поиском`
+            : `${apps.length.toLocaleString('ru')} заявлений`;
+  }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  /* ---------- вид «1-й выбор» ---------- */
+  function renderFirst(){
+    const key = state.group;
+    const q = state.search.trim().toLowerCase();
+    const tot = new Map(), p1 = new Map();
+    for(const a of APPS){
+      if(state.comp && a.compensation!==state.comp) continue;
+      if(state.inst && a.institute!==state.inst) continue;
+      if(q && !(a.program.toLowerCase().includes(q) || a.speciality.toLowerCase().includes(q))) continue;
+      const name = a[key];
+      tot.set(name,(tot.get(name)||0)+1);
+      if(a.priority===1) p1.set(name,(p1.get(name)||0)+1);
+    }
+    let rows = [...tot.entries()].map(([name,t])=>({
+      name, spec: key==='program'?specForProgram(name):null,
+      total:t, p1:p1.get(name)||0
+    }));
+    rows.sort((a,b)=> b.p1-a.p1 || b.total-a.total);
+
+    const maxTotal = Math.max(1, ...rows.map(r=>r.total));
+    $('#sShownCount').textContent = rows.reduce((s,r)=>s+r.p1,0).toLocaleString('ru');
+    $('#sShownLbl').textContent = 'заявлений 1-м приоритетом';
+    $('#sDirs').textContent = rows.length.toLocaleString('ru');
+
+    const box = $('#rowsF');
+    if(!rows.length){ box.innerHTML='<div class="empty">Ничего не найдено под эти фильтры.</div>'; $('#ftInfo').textContent=''; return; }
+    box.innerHTML = rows.map((r,i)=>{
+      const wt=(r.total/maxTotal*100).toFixed(1), wp=(r.p1/maxTotal*100).toFixed(1);
+      const share=r.total?Math.round(r.p1/r.total*100):0;
+      const spec=r.spec?` <span style="color:var(--faint);font-family:var(--mono);font-size:11px">${esc(r.spec.split(' ')[0])}</span>`:'';
+      return `<div class="trow-f">
+      <div class="bar" style="width:${wt}%"></div>
+      <div class="bar p1" style="width:${wp}%"></div>
+      <div class="rank">${i+1}</div>
+      <div class="name" title="${esc(r.name)}">${esc(r.name)}${spec}</div>
+      <div class="num p1">${r.p1.toLocaleString('ru')}</div>
+      <div class="num">${r.total.toLocaleString('ru')}</div>
+      <div class="num share">${share}%</div>
+    </div>`;
+    }).join('');
+    $('#ftInfo').textContent = 'Тёмная полоса — сколько человек поставили направление первым приоритетом; светлая — все заявления. «Доля 1-х» = насколько это направление для людей главное.';
+  }
+
+  /* ---------- вид «Где я» ---------- */
+  function renderMe(){
+    const box = $('#meResult');
+    $('#ftInfo').textContent = '';
+    const dir = state.meDir.trim();
+    const score = state.meScore==='' ? null : +state.meScore;
+    if(!dir){ box.innerHTML='<div class="me-empty">Выбери направление из списка, укажи финансирование и введи свой балл — покажу твою позицию в текущем списке подавших.</div>'; return; }
+
+    let list = APPS.filter(a=> a.program===dir && (!state.meComp || a.compensation===state.meComp));
+    if(!list.length){ box.innerHTML='<div class="me-empty">На это направление с выбранным финансированием заявлений пока нет. Проверь название (выбирай из подсказок) или сними фильтр финансирования.</div>'; return; }
+
+    list.sort((a,b)=> b.total-a.total);
+    const n = list.length;
+    const scored = list.filter(a=>a.total>0).length;
+
+    if(score===null){
+      box.innerHTML = `<div class="me-empty">В списке «${esc(dir)}»${state.meComp?` (${esc(state.meComp)})`:''} сейчас <b>${n}</b> заявлений${scored<n?`, из них с проставленным баллом — ${scored}`:''}. Введи свой балл, чтобы увидеть позицию.</div>`;
+      return;
+    }
+
+    const above = list.filter(a=>a.total>score).length;
+    const equal = list.filter(a=>a.total===score).length;
+    const below = n-above-equal;
+    const posFrom = above+1, posTo = above+equal;
+    const pctBelow = Math.round(below/n*100);
+
+    // соседи: несколько выше и ниже точки вставки
+    const idx = above; // позиция вставки (0-based) перед равными
+    const from = Math.max(0, idx-5), to = Math.min(n, idx+6);
+    const neigh = list.slice(from, to).map((a,j)=>{
+      const rank = from+j+1;
+      return `<div class="me-row"><span class="r">${rank}</span><span class="reg">${a.regnum}${a.priority===1?' · 1-й приор.':''}</span><span class="sc">${a.total||0}</span></div>`;
+    });
+    // строка «ты» — вставляем на границу above|equal
+    const youRow = `<div class="me-row you"><span class="r">${posFrom}${equal>1?'–'+posTo:''}</span><span class="reg">твой балл ${score}</span><span class="sc">${score}</span></div>`;
+    const insertAt = above - from; // сколько соседей идёт до тебя
+    neigh.splice(insertAt, 0, youRow);
+
+    box.innerHTML = `
+    <div class="me-head">
+      <div><span class="me-pos-n">#${posFrom}${equal>1?'–'+posTo:''}</span> <span class="me-pos-of">из ${n}</span></div>
+      <div class="me-pct">ты выше <b>${pctBelow}%</b> подавших</div>
+    </div>
+    <div class="me-sub">
+      Выше по баллу: <b>${above}</b> · с таким же (${score}): <b>${equal>0?equal-0:0}</b> · ниже: <b>${below}</b>.
+      ${scored<n?`<br>Ещё <b>${n-scored}</b> заявлений без проставленного балла (стоят внизу).`:''}
+      ${state.meComp?'':'<br>Показаны бюджет и контракт вместе — выбери финансирование, чтобы сузить.'}
+    </div>
+    <div class="me-list">${neigh.join('')}</div>`;
+  }
+
+  /* ---------- CSV ---------- */
+  function exportCsv(){
+    if(state.view==='rating'){ exportRatingCsv(); return; }
+    const {rows} = aggregate();
+    const head = state.group==='program' ? ['Программа','Специальность','Количество'] : ['Специальность','Количество'];
+    const lines = [head.join(';')];
+    for(const r of rows){
+      const cells = state.group==='program' ? [r.name, r.spec||'', r.count] : [r.name, r.count];
+      lines.push(cells.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';'));
+    }
+    const blob = new Blob(['\uFEFF'+lines.join('\n')], {type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download = `urfu_${state.group}_${state.mode}.csv`; a.click();
+  }
+
+  function exportRatingCsv(){
+    const k=state.rSort;
+    const apps=filterApps().slice().sort((a,b)=>{
+      if(k==='priority'){const pa=a.priority===''?1e9:a.priority,pb=b.priority===''?1e9:b.priority;return pa-pb;}
+      return b[k]-a[k];
+    });
+    const head=['Рег.номер','Программа','Специальность','Финансирование','Приоритет','Балл','Ср.балл аттестата','Достижения','Статус'];
+    const lines=[head.join(';')];
+    for(const a of apps){
+      const cells=[a.regnum,a.program,a.speciality,a.compensation,a.priority,a.total,a.avgm,a.achievs,a.status];
+      lines.push(cells.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';'));
+    }
+    const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+    const el=document.createElement('a'); el.href=URL.createObjectURL(blob);
+    el.download='urfu_reyting.csv'; el.click();
+  }
+
+  /* ---------- встроенный срез ---------- */
+  async function loadSnapshot(){
+    try{
+      if(SNAPSHOT_DATA){ loadObject(SNAPSHOT_DATA); return; }
+      if(SNAPSHOT_URL){
+        setStatus('Гружу встроенный срез…');
+        const r = await fetch(SNAPSHOT_URL);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        loadObject(await r.json());
+        return;
+      }
+    }catch(e){ setStatus('Не удалось открыть срез: '+e.message, 'err'); }
+  }
+  function initSnapshot(){
+    const has = !!(SNAPSHOT_DATA || SNAPSHOT_URL);
+    if(!has) return;
+    const btn = $('#btnSnap');
+    btn.textContent = `Открыть срез от ${SNAPSHOT_DATE}`;
+    btn.classList.remove('hidden');
+    $('#snapNote').textContent = `данные на ${SNAPSHOT_DATE}`;
+    btn.onclick = loadSnapshot;
+  }
+  initSnapshot();
+
+  /* ---------- события ---------- */
+  $('#btnFetch').onclick = fetchFromServer;
+  $('#btnFile').onclick = ()=>$('#fileInput').click();
+  $('#fileInput').onchange = e=>{ const f=e.target.files[0]; if(f) f.text().then(loadText); };
+
+  const drop = $('#drop');
+  drop.addEventListener('dragover', e=>{e.preventDefault();drop.classList.add('over');});
+  drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
+  drop.addEventListener('drop', e=>{
+    e.preventDefault(); drop.classList.remove('over');
+    const f=e.dataTransfer.files[0]; if(f) f.text().then(loadText);
+  });
+  // вставка JSON текстом
+  drop.setAttribute('contenteditable','false');
+  document.addEventListener('paste', e=>{
+    if($('#app').classList.contains('hidden')){
+      const t=(e.clipboardData||window.clipboardData).getData('text');
+      if(t && t.length>40) loadText(t);
+    }
+  });
+
+  $('#btnCopy').onclick = ()=>{
+    navigator.clipboard.writeText($('#snip').textContent).then(()=>{ $('#btnCopy').textContent='Скопировано'; setTimeout(()=>$('#btnCopy').textContent='Копировать',1500); });
+  };
+
+  $('#segView').onclick = e=>{ const b=e.target.closest('button'); if(!b)return;
+    state.view=b.dataset.v; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b)); render(); };
+  $('#cardRating').querySelector('.thead-r').addEventListener('click', e=>{
+    const c=e.target.closest('.sortable'); if(!c)return; state.rSort=c.dataset.k; render(); });
+  $('#segGroup').onclick = e=>{ const b=e.target.closest('button'); if(!b)return;
+    state.group=b.dataset.v; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b)); render(); };
+  $('#segMode').onclick = e=>{ const b=e.target.closest('button'); if(!b)return;
+    state.mode=b.dataset.v; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b)); render(); };
+  $('#fComp').onchange = e=>{ state.comp=e.target.value; render(); };
+  $('#fInst').onchange = e=>{ state.inst=e.target.value; render(); };
+  $('#fStatus').onchange = e=>{ state.status=e.target.value; render(); };
+  $('#fPrio').onchange = e=>{ state.prio=e.target.value; render(); };
+  $('#fSmin').oninput = e=>{ state.smin=e.target.value; render(); };
+  $('#fSmax').oninput = e=>{ state.smax=e.target.value; render(); };
+  $('#fSearch').oninput = e=>{ state.search=e.target.value; render(); };
+  $('#thCount').onclick = ()=>{ state.sortDesc=!state.sortDesc; render(); };
+  $('#meDir').oninput = e=>{ state.meDir=e.target.value; renderMe(); };
+  $('#meComp').onchange = e=>{ state.meComp=e.target.value; renderMe(); };
+  $('#meScore').oninput = e=>{ state.meScore=e.target.value; renderMe(); };
+  $('#btnCsv').onclick = exportCsv;
+  $('#btnReset').onclick = ()=>{ $('#app').classList.add('hidden'); $('#loader').classList.remove('hidden'); setStatus(''); };
+</script>
+</body>
+</html>
