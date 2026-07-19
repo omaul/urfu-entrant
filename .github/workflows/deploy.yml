@@ -27,8 +27,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # тянем свежие данные; если urfu.ru недоступен — публикуем закоммиченный срез
+      # свежие данные тянем только по расписанию и при ручном запуске,
+      # чтобы не долбить API на каждый пуш; если urfu.ru недоступен —
+      # публикуем закоммиченный срез
       - name: Refresh snapshot
+        if: github.event_name != 'push'
         continue-on-error: true
         run: node scripts/update-snapshot.mjs
 
