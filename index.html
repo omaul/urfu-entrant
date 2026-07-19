@@ -16,83 +16,16 @@
     <div>
       <div class="eyebrow">УрФУ · приёмная кампания</div>
       <h1>Абитуриенты по направлениям</h1>
-      <div class="sub" id="dataSub">Загрузите выгрузку заявлений и считайте конкурс по любому срезу</div>
+      <div class="sub" id="dataSub">Заявления, конкурс и рейтинги приёмной кампании</div>
     </div>
   </header>
 
-  <!-- ============ LOADER ============ -->
+  <!-- ============ LOADER (виден, пока грузится срез, и как фолбэк при ошибке) ============ -->
   <section id="loader" class="card">
     <div class="row">
       <button class="btn primary hidden" id="btnSnap">Открыть встроенный срез</button>
       <button class="btn" id="btnFetch">Загрузить свежие с сервера</button>
-      <button class="btn" id="btnFile">Загрузить файл JSON</button>
-      <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
-      <span class="eyebrow" id="snapNote"></span>
     </div>
-
-    <div class="drop" id="drop">
-      Перетащите сюда <b>urfu_packed.json</b> — либо вставьте JSON и нажмите Enter
-      <br><small>(файл получается снипетом из консоли, см. ниже)</small>
-    </div>
-
-    <details class="snippet">
-      <summary>Снипет для консоли (если «Загрузить с сервера» упрётся в CORS)</summary>
-      <button class="btn copy" id="btnCopy">Копировать</button>
-      <pre id="snip">(async () =&gt; {
-  const base = '/api/entrant/';
-  const CONC = 6, RETRIES = 3;
-  const t0 = performance.now(), secs = () =&gt; ((performance.now()-t0)/1000).toFixed(1);
-
-  console.log('[1/5] Подбираю размер страницы…');
-  let size = null, first = null;
-  for (const s of [1000,500,200,100,50,25,20,10]) {
-    try { const r = await fetch(`${base}?page=1&amp;size=${s}`);
-      if (r.ok) { const j = await r.json(); if (j.items) { size=s; first=j; break; } } } catch(e){}
-  }
-  if (!size) return console.error('Не нашёл рабочий size');
-  const total = first.count, pages = Math.ceil(total/size);
-  console.log(`[2/5] size=${size}, записей=${total}, страниц=${pages}. Качаю (потоков ${CONC})…`);
-
-  const getPage = async (p) =&gt; {
-    for (let t=1;t&lt;=RETRIES;t++){
-      try { const r = await fetch(`${base}?page=${p}&amp;size=${size}`);
-        if (r.ok) { const j = await r.json(); if (j.items) return j.items; } } catch(e){}
-      await new Promise(res =&gt; setTimeout(res, 400*t));
-    }
-    console.warn(`страница ${p} пропущена`); return [];
-  };
-  const buckets = new Array(pages); buckets[0] = first.items;
-  let nextPage = 2, done = 1, got = first.items.length;
-  const worker = async () =&gt; { while (nextPage &lt;= pages) {
-    const p = nextPage++; buckets[p-1] = await getPage(p);
-    got += buckets[p-1].length; done++;
-    if (done%10===0 || done===pages) {
-      const rate = done/(performance.now()-t0)*1000;
-      console.log(`  ${done}/${pages} стр. · ${got}/${total} · ~${Math.max(0,(pages-done)/rate).toFixed(0)}s`);
-    }
-  }};
-  await Promise.all(Array.from({length:CONC}, worker));
-  const raw = buckets.flat();
-  console.log(`[4/5] Скачано ${raw.length} за ${secs()}s. Пакую…`);
-
-  const dict = {program:[],speciality:[],institute:[],compensation:[],status:[]};
-  const idx  = {program:new Map(),speciality:new Map(),institute:new Map(),compensation:new Map(),status:new Map()};
-  const id = (f,v) =&gt; { v=v||''; const m=idx[f]; if(m.has(v))return m.get(v); const i=dict[f].length; dict[f].push(v); m.set(v,i); return i; };
-  const items = raw.map(e =&gt; ({ r:e.regnum, a:(e.applications||[]).map(a =&gt; [
-    id('program',a.program), id('speciality',a.speciality), id('institute',a.institute),
-    id('compensation',a.compensation), id('status',a.status),
-    a.total_mark||0, a.avgm||0, a.achievs||0, (a.priority==null?null:a.priority)
-  ])}));
-  const blob = new Blob([JSON.stringify({v:2, dict, items})], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'urfu_packed.json'; a.click();
-  console.log(`[5/5] Готово за ${secs()}s. Записей: ${items.length}.`);
-})();</pre>
-      <div style="color:var(--muted);font-size:12.5px;margin-top:8px">
-        Открой <b>urfu.ru/ru/alpha/full</b> → F12 → вкладка Console → вставь код → Enter. Скачается файл, его и закинь сюда.
-      </div>
-    </details>
-
     <div class="status" id="status"></div>
   </section>
 
@@ -215,7 +148,6 @@
       <span style="display:flex;gap:8px">
         <button class="btn" id="btnCsv">Скачать CSV</button>
         <button class="btn" id="btnUpdate">Обновить с сервера</button>
-        <button class="btn" id="btnReset">Загрузить другие данные</button>
       </span>
     </div>
   </section>

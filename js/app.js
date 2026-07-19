@@ -38,9 +38,9 @@ async function fetchFromServer(){
       buckets[p-1]=await getPage(p); got+=buckets[p-1].length; done++;
       setStatus(`Загружено ${got} из ${total} · ${done}/${pages} стр.…`); } };
     await Promise.all(Array.from({length:CONC},worker));
-    ingest(buckets.flat(), 'свежие с urfu.ru, '+new Date().toLocaleString('ru',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}));
+    ingest(buckets.flat(), new Date().toLocaleString('ru',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})+' (загружено с urfu.ru)');
   }catch(e){
-    setStatus('Прямая загрузка не удалась ('+e.message+'). Обычно это CORS — используйте снипет из консоли и загрузите файл.', 'err');
+    setStatus('Не удалось загрузить с urfu.ru ('+e.message+'). Скорее всего, сервер не отдаёт данные браузеру (CORS) — остаёмся на текущих данных.', 'err');
   }finally{
     $('#btnFetch').disabled = false;
   }
@@ -77,11 +77,6 @@ function loadObject(obj, label){
   ingest(items, label);
 }
 
-function loadText(text, label){
-  try{ loadObject(JSON.parse(text), label); }
-  catch(e){ setStatus('Не разобрал JSON: '+e.message, 'err'); }
-}
-
 /* ---------- подготовка данных ---------- */
 function ingest(items, sourceLabel){
   ENTRANTS = items;
@@ -105,7 +100,7 @@ function ingest(items, sourceLabel){
     }
   }
   buildFilters();
-  $('#dataSub').textContent = sourceLabel ? 'Данные: '+sourceLabel : DEFAULT_SUB;
+  $('#dataSub').textContent = sourceLabel ? 'Данные обновлены: '+sourceLabel : DEFAULT_SUB;
   $('#loader').classList.add('hidden');
   $('#app').classList.remove('hidden');
   $('#sEntrants').textContent = ENTRANTS.length.toLocaleString('ru');
@@ -409,53 +404,33 @@ function exportRatingCsv(){
 }
 
 /* ---------- встроенный срез ---------- */
+const SNAPSHOT_LABEL = `${SNAPSHOT_DATE} (срез обновляется автоматически раз в день)`;
 async function loadSnapshot(){
   try{
-    if(SNAPSHOT_DATA){ loadObject(SNAPSHOT_DATA, 'встроенный срез от '+SNAPSHOT_DATE); return; }
+    if(SNAPSHOT_DATA){ loadObject(SNAPSHOT_DATA, SNAPSHOT_LABEL); return; }
     if(SNAPSHOT_URL){
-      setStatus('Гружу встроенный срез…');
+      setStatus('Открываю срез от '+SNAPSHOT_DATE+'…');
       const r = await fetch(SNAPSHOT_URL);
       if(!r.ok) throw new Error('HTTP '+r.status);
-      loadObject(await r.json(), 'встроенный срез от '+SNAPSHOT_DATE);
+      loadObject(await r.json(), SNAPSHOT_LABEL);
       return;
     }
-  }catch(e){ setStatus('Не удалось открыть срез: '+e.message, 'err'); }
+  }catch(e){
+    setStatus('Не удалось открыть срез ('+e.message+') — попробуйте ещё раз или загрузите с сервера.', 'err');
+  }
 }
 function initSnapshot(){
-  const has = !!(SNAPSHOT_DATA || SNAPSHOT_URL);
-  if(!has) return;
+  if(!(SNAPSHOT_DATA || SNAPSHOT_URL)) return;
   const btn = $('#btnSnap');
   btn.textContent = `Открыть срез от ${SNAPSHOT_DATE}`;
   btn.classList.remove('hidden');
-  $('#snapNote').textContent = `данные на ${SNAPSHOT_DATE}`;
   btn.onclick = loadSnapshot;
+  loadSnapshot(); // основной сценарий: сразу показываем последний задеплоенный срез
 }
 initSnapshot();
 
 /* ---------- события ---------- */
 $('#btnFetch').onclick = fetchFromServer;
-$('#btnFile').onclick = ()=>$('#fileInput').click();
-$('#fileInput').onchange = e=>{ const f=e.target.files[0]; if(f) f.text().then(t=>loadText(t, 'файл '+f.name)); };
-
-const drop = $('#drop');
-drop.addEventListener('dragover', e=>{e.preventDefault();drop.classList.add('over');});
-drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
-drop.addEventListener('drop', e=>{
-  e.preventDefault(); drop.classList.remove('over');
-  const f=e.dataTransfer.files[0]; if(f) f.text().then(t=>loadText(t, 'файл '+f.name));
-});
-// вставка JSON текстом
-drop.setAttribute('contenteditable','false');
-document.addEventListener('paste', e=>{
-  if($('#app').classList.contains('hidden')){
-    const t=(e.clipboardData||window.clipboardData).getData('text');
-    if(t && t.length>40) loadText(t, 'вставленный JSON');
-  }
-});
-
-$('#btnCopy').onclick = ()=>{
-  navigator.clipboard.writeText($('#snip').textContent).then(()=>{ $('#btnCopy').textContent='Скопировано'; setTimeout(()=>$('#btnCopy').textContent='Копировать',1500); });
-};
 
 $('#segView').onclick = e=>{ const b=e.target.closest('button'); if(!b)return;
   state.view=b.dataset.v; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b)); render(); };
@@ -482,4 +457,3 @@ $('#btnUpdate').onclick = async ()=>{
   try{ await fetchFromServer(); }
   finally{ b.disabled=false; }
 };
-$('#btnReset').onclick = ()=>{ $('#app').classList.add('hidden'); $('#loader').classList.remove('hidden'); $('#dataSub').textContent=DEFAULT_SUB; setStatus(''); };
